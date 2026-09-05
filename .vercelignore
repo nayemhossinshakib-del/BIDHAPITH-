@@ -1,0 +1,9 @@
+.git
+.next
+coverage
+data
+uploads
+tests
+docs
+docker-compose.yml
+Dockerfile
