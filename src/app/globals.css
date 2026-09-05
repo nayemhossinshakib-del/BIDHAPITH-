@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #f6f8f7;
+  --foreground: #12201c;
+  --card: #ffffff;
+  --card-foreground: #12201c;
+  --popover: #ffffff;
+  --popover-foreground: #12201c;
+  --primary: #0f766e;
+  --primary-foreground: #f7fffc;
+  --secondary: #e7f3ef;
+  --secondary-foreground: #115e59;
+  --muted: #eef2f0;
+  --muted-foreground: #5b6b66;
+  --accent: #fff4e6;
+  --accent-foreground: #9a3412;
+  --destructive: #b42318;
+  --destructive-foreground: #fff;
+  --border: #dbe4e0;
+  --input: #dbe4e0;
+  --ring: #0f766e;
+  --radius: 0.85rem;
+  --sidebar: #0b3d38;
+  --sidebar-foreground: #e8f6f3;
+  --sidebar-accent: #115e59;
+  --chart-1: #0f766e;
+  --chart-2: #c2410c;
+  --chart-3: #1d4ed8;
+  --chart-4: #a16207;
+  --chart-5: #7c3aed;
+}
+
+.dark {
+  --background: #08110f;
+  --foreground: #e8f2ee;
+  --card: #10211d;
+  --card-foreground: #e8f2ee;
+  --popover: #10211d;
+  --popover-foreground: #e8f2ee;
+  --primary: #2dd4bf;
+  --primary-foreground: #04221e;
+  --secondary: #14332e;
+  --secondary-foreground: #d1f5ee;
+  --muted: #14332e;
+  --muted-foreground: #9cb5af;
+  --accent: #3b2a16;
+  --accent-foreground: #fdba74;
+  --destructive: #f87171;
+  --destructive-foreground: #1c0707;
+  --border: #1e3a35;
+  --input: #1e3a35;
+  --ring: #2dd4bf;
+  --sidebar: #071412;
+  --sidebar-foreground: #d7efe9;
+  --sidebar-accent: #115e59;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --font-sans: var(--font-jakarta), var(--font-bengali), ui-sans-serif, system-ui, sans-serif;
+  --font-bengali: var(--font-bengali), "Noto Sans Bengali", sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+.font-bn {
+  font-family: var(--font-bengali), var(--font-sans);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 25%, white);
+}
