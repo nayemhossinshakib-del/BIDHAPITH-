@@ -1,12 +1,22 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { Brand } from "@/components/brand";
 import { LoginForm } from "./login-form";
-import { DEMO_ACCOUNTS } from "@/lib/constants";
+import { DEMO_ACCOUNTS, ROLE_HOME } from "@/lib/constants";
+import { getAuthContext } from "@/lib/auth/session";
 
 export const metadata = { title: "লগইন" };
+export const dynamic = "force-dynamic";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  let ctx = null;
+  try {
+    ctx = await getAuthContext();
+  } catch {
+    ctx = null;
+  }
+  if (ctx) redirect(ROLE_HOME[ctx.role] || "/admin");
   const demo = process.env.DEMO_MODE !== "false";
   return (
     <div className="grid min-h-screen lg:grid-cols-2">

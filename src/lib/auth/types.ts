@@ -17,4 +17,5 @@ export type SessionPayload = {
   role: Role;
   schoolId: string | null;
   impersonatedBy: string | null;
+  email?: string | null;
 };

@@ -99,6 +99,7 @@ export async function loginWithPassword(opts: {
       userId: user.id,
       role: user.role as Role,
       schoolId: user.schoolId,
+      email: user.email,
       ip: opts.ip,
       userAgent: opts.userAgent,
     });
@@ -111,6 +112,7 @@ export async function loginWithPassword(opts: {
       role: user.role as Role,
       schoolId: user.schoolId,
       impersonatedBy: null,
+      email: user.email,
     });
     session = { jwt, sessionId: user.id, expiresAt };
   }

@@ -14,12 +14,17 @@ const ROLE_PREFIX: Record<string, string> = {
 
 function decodeRole(token: string | undefined): string | null {
   if (!token) return null;
-  try {
-    const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString());
-    return payload.role ?? null;
-  } catch {
-    return null;
-  }
+  const part = token.split(".")[1];
+  if (!part) return null;
+  const tryDecode = (value: string, enc: BufferEncoding) => {
+    try {
+      const payload = JSON.parse(Buffer.from(value, enc).toString());
+      return (payload.role as string | undefined) ?? null;
+    } catch {
+      return null;
+    }
+  };
+  return tryDecode(part, "base64url") ?? tryDecode(part.replace(/-/g, "+").replace(/_/g, "/") + "==", "base64");
 }
 
 export function proxy(request: NextRequest) {

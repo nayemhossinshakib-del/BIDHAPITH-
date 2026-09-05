@@ -19,8 +19,15 @@ export function hashToken(token: string) {
 }
 
 export async function signSession(payload: SessionPayload, expiresIn = "7d") {
-  return new SignJWT(payload)
+  return new SignJWT({
+    sid: payload.sid,
+    role: payload.role,
+    schoolId: payload.schoolId,
+    impersonatedBy: payload.impersonatedBy ?? null,
+    email: payload.email ?? null,
+  })
     .setProtectedHeader({ alg: "HS256" })
+    .setSubject(payload.sub)
     .setIssuedAt()
     .setExpirationTime(expiresIn)
     .sign(secret());
@@ -39,6 +46,7 @@ export async function createUserSession(opts: {
   userId: string;
   role: Role;
   schoolId: string | null;
+  email?: string | null;
   ip?: string | null;
   userAgent?: string | null;
   impersonatedBy?: string | null;
@@ -65,17 +73,19 @@ export async function createUserSession(opts: {
     role: opts.role,
     schoolId: opts.schoolId,
     impersonatedBy: opts.impersonatedBy ?? null,
+    email: opts.email ?? null,
   });
   return { jwt, sessionId, expiresAt };
 }
 
 export function sessionCookieOptions(expiresAt: Date) {
+  const maxAge = Math.max(60, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
   return {
     httpOnly: true,
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL),
     path: "/",
-    expires: expiresAt,
+    maxAge,
   };
 }
 
@@ -107,7 +117,10 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   if (session?.revokedAt) return null;
   if (session && epochMs(session.expiresAt) > 0 && epochMs(session.expiresAt) < Date.now()) return null;
 
-  const user = db.select().from(users).where(eq(users.id, payload.sub)).get();
+  let user = db.select().from(users).where(eq(users.id, payload.sub)).get();
+  if (!user && payload.email) {
+    user = db.select().from(users).where(eq(users.email, payload.email)).get();
+  }
   if (!user || user.status !== "ACTIVE") return null;
 
   return {
