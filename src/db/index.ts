@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import Database from "better-sqlite3";
-import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { NodeSqlite } from "./node-sqlite";
+import { drizzleNode } from "./drizzle-node";
 import * as schema from "./schema";
 
 const DEMO_DB = path.join(/* turbopackIgnore: true */ process.cwd(), "prisma", "demo.sqlite");
@@ -27,7 +27,6 @@ function demoCandidates() {
   return [
     DEMO_DB,
     path.join(/* turbopackIgnore: true */ process.cwd(), "prisma", "demo.sqlite"),
-    path.join(/* turbopackIgnore: true */ process.cwd(), "src", "db", "demo.sqlite"),
     "/var/task/prisma/demo.sqlite",
   ];
 }
@@ -41,9 +40,9 @@ function findDemoDb() {
 
 function hasUsersTable(file: string) {
   if (!fileOk(file)) return false;
-  let probe: Database.Database | null = null;
+  let probe: NodeSqlite | null = null;
   try {
-    probe = new Database(file, { readonly: true, fileMustExist: true });
+    probe = new NodeSqlite(file, { readonly: true });
     const row = probe.prepare("select name from sqlite_master where type='table' and name='users'").get();
     return Boolean(row);
   } catch {
@@ -60,12 +59,9 @@ function hasUsersTable(file: string) {
 function ensureDatabase(target: string) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   if (hasUsersTable(target)) return;
-
   const demo = findDemoDb();
   if (!demo) {
-    throw new Error(
-      `Bidhapith demo database missing. Looked for prisma/demo.sqlite (cwd=${process.cwd()}).`,
-    );
+    throw new Error(`Bidhapith demo database missing. Looked for prisma/demo.sqlite (cwd=${process.cwd()}).`);
   }
   fs.copyFileSync(/* turbopackIgnore: true */ demo, target);
   if (!hasUsersTable(target)) {
@@ -76,12 +72,12 @@ function ensureDatabase(target: string) {
 const resolved = resolveDbPath();
 ensureDatabase(resolved);
 
-const sqlite = new Database(resolved);
+const sqlite = new NodeSqlite(resolved);
 sqlite.pragma(process.env.VERCEL ? "journal_mode = DELETE" : "journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
 sqlite.pragma("busy_timeout = 5000");
 
-export const db: BetterSQLite3Database<typeof schema> = drizzle(sqlite, { schema });
+export const db = drizzleNode(sqlite, { schema });
 export { schema, sqlite };
 export type DB = typeof db;
 export const dbPath = resolved;

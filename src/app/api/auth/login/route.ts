@@ -24,9 +24,13 @@ export async function POST(req: Request) {
       ip: req.headers.get("x-forwarded-for"),
       userAgent: req.headers.get("user-agent"),
     });
-    const res = NextResponse.json({ ok: true, ...result, requestId });
-    if ("jwt" in result && result.jwt && result.expiresAt) {
-      res.cookies.set(SESSION_COOKIE, result.jwt as string, sessionCookieOptions(result.expiresAt as Date));
+    const { jwt, expiresAt, ...publicResult } = result as typeof result & {
+      jwt?: string;
+      expiresAt?: Date;
+    };
+    const res = NextResponse.json({ ok: true, ...publicResult, requestId });
+    if (jwt && expiresAt) {
+      res.cookies.set(SESSION_COOKIE, jwt, sessionCookieOptions(expiresAt));
     }
     return res;
   } catch (err) {

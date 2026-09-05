@@ -4,10 +4,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  serverExternalPackages: ["better-sqlite3"],
   outputFileTracingIncludes: {
     "/*": ["./prisma/demo.sqlite"],
     "/admin": ["./prisma/demo.sqlite"],

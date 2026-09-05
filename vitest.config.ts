@@ -7,6 +7,12 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     fileParallelism: false,
     testTimeout: 30000,
+    pool: "forks",
+    server: {
+      deps: {
+        external: ["node:sqlite"],
+      },
+    },
   },
   resolve: {
     alias: {
