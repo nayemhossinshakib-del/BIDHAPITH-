@@ -4,26 +4,34 @@ import Database from "better-sqlite3";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 
+const DEMO_DB = path.join(process.cwd(), "prisma", "demo.sqlite");
+const LOCAL_DB = path.join(process.cwd(), "data", "bidhapith.db");
+
 function resolveDbPath() {
-  if (process.env.VERCEL) {
-    return "/tmp/bidhapith.db";
+  if (process.env.VERCEL) return "/tmp/bidhapith.db";
+  return LOCAL_DB;
+}
+
+function fileOk(p: string) {
+  try {
+    return (
+      fs.existsSync(/* turbopackIgnore: true */ p) &&
+      fs.statSync(/* turbopackIgnore: true */ p).size > 0
+    );
+  } catch {
+    return false;
   }
-  const dbUrl = process.env.DATABASE_URL?.replace(/^file:/, "") || "./data/bidhapith.db";
-  return path.isAbsolute(dbUrl) ? dbUrl : path.join(process.cwd(), dbUrl);
 }
 
 function ensureDatabase(target: string) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  if (fs.existsSync(target) && fs.statSync(target).size > 0) return;
-  const candidates = [
-    path.join(process.cwd(), "prisma/demo.sqlite"),
-    path.join(process.cwd(), "data/bidhapith.db"),
-  ];
-  for (const src of candidates) {
-    if (fs.existsSync(src) && fs.statSync(src).size > 0) {
-      fs.copyFileSync(src, target);
-      return;
-    }
+  if (fileOk(target)) return;
+  if (fileOk(DEMO_DB)) {
+    fs.copyFileSync(/* turbopackIgnore: true */ DEMO_DB, target);
+    return;
+  }
+  if (target !== LOCAL_DB && fileOk(LOCAL_DB)) {
+    fs.copyFileSync(/* turbopackIgnore: true */ LOCAL_DB, target);
   }
 }
 

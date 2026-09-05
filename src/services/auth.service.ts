@@ -30,7 +30,7 @@ export async function loginWithPassword(opts: {
     db.select().from(users).where(eq(users.email, identifier)).get() ??
     db.select().from(users).where(eq(users.mobile, opts.identifier.trim())).get();
 
-  const fail = async (reason: string) => {
+  const fail = (reason: string): never => {
     db.insert(loginAttempts)
       .values({
         id: createId(),
@@ -42,14 +42,14 @@ export async function loginWithPassword(opts: {
     throw new UnauthorizedError(reason);
   };
 
-  if (!user) await fail("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
+  if (!user) fail("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
 
   if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
-    await fail("অ্যাকাউন্ট সাময়িকভাবে লক করা হয়েছে");
+    fail("অ্যাকাউন্ট সাময়িকভাবে লক করা হয়েছে");
   }
 
   if (user.status !== "ACTIVE") {
-    await fail("এই অ্যাকাউন্টটি নিষ্ক্রিয়");
+    fail("এই অ্যাকাউন্টটি নিষ্ক্রিয়");
   }
 
   const ok = await verifyPassword(opts.password, user.passwordHash);
@@ -60,7 +60,7 @@ export async function loginWithPassword(opts: {
       .set({ failedLogins: failed, lockedUntil, updatedAt: new Date() })
       .where(eq(users.id, user.id))
       .run();
-    await fail("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
+    fail("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
   }
 
   db.update(users)
