@@ -5,17 +5,66 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Bell,
+  BookOpen,
+  Building2,
+  CalendarCheck,
+  CreditCard,
+  FileText,
+  Globe,
+  GraduationCap,
+  LayoutDashboard,
   LogOut,
+  Megaphone,
   Menu,
+  MessageSquare,
   Moon,
+  Receipt,
+  ScrollText,
+  Settings,
+  Shield,
   Sun,
+  Users,
+  Wallet,
   X,
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export type NavItem = { href: string; label: string; icon: React.ReactNode };
+export type NavItem = { href: string; label: string; icon?: React.ReactNode };
+
+const ICONS: Record<string, React.ReactNode> = {
+  "/admin": <LayoutDashboard className="h-4 w-4" />,
+  "/admin/schools": <Building2 className="h-4 w-4" />,
+  "/admin/subscriptions": <CreditCard className="h-4 w-4" />,
+  "/admin/plans": <ScrollText className="h-4 w-4" />,
+  "/admin/payments": <Wallet className="h-4 w-4" />,
+  "/admin/sms": <MessageSquare className="h-4 w-4" />,
+  "/admin/users": <Users className="h-4 w-4" />,
+  "/admin/admissions": <GraduationCap className="h-4 w-4" />,
+  "/admin/domains": <Globe className="h-4 w-4" />,
+  "/admin/reports": <FileText className="h-4 w-4" />,
+  "/admin/audit-logs": <Shield className="h-4 w-4" />,
+  "/admin/settings": <Settings className="h-4 w-4" />,
+  "/school": <LayoutDashboard className="h-4 w-4" />,
+  "/school/students": <GraduationCap className="h-4 w-4" />,
+  "/school/teachers": <Users className="h-4 w-4" />,
+  "/school/accountants": <Wallet className="h-4 w-4" />,
+  "/school/classes": <BookOpen className="h-4 w-4" />,
+  "/school/subjects": <ScrollText className="h-4 w-4" />,
+  "/school/attendance": <CalendarCheck className="h-4 w-4" />,
+  "/school/results": <FileText className="h-4 w-4" />,
+  "/school/fees": <CreditCard className="h-4 w-4" />,
+  "/school/payments": <Receipt className="h-4 w-4" />,
+  "/school/admissions": <GraduationCap className="h-4 w-4" />,
+  "/school/notices": <Megaphone className="h-4 w-4" />,
+  "/school/documents": <FileText className="h-4 w-4" />,
+  "/school/sms": <MessageSquare className="h-4 w-4" />,
+  "/school/reports": <FileText className="h-4 w-4" />,
+  "/school/website": <Globe className="h-4 w-4" />,
+  "/school/settings": <Settings className="h-4 w-4" />,
+  "/school/subscription": <CreditCard className="h-4 w-4" />,
+};
 
 export function AppShell({
   items,
@@ -45,7 +94,9 @@ export function AppShell({
   const nav = (
     <nav className="flex flex-col gap-1 p-3">
       {items.map((item) => {
-        const active = pathname === item.href || pathname.startsWith(item.href + "/");
+        const active = pathname === item.href || (item.href !== "/admin" && item.href !== "/school" && pathname.startsWith(item.href + "/"));
+        const exactHome = item.href === "/admin" || item.href === "/school" || item.href === "/teacher" || item.href === "/accountant" || item.href === "/student";
+        const isActive = exactHome ? pathname === item.href : active || pathname.startsWith(item.href + "/");
         return (
           <Link
             key={item.href}
@@ -53,12 +104,12 @@ export function AppShell({
             onClick={() => setOpen(false)}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-              active
+              isActive
                 ? "bg-sidebar-accent text-white"
                 : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-white",
             )}
           >
-            {item.icon}
+            {item.icon ?? ICONS[item.href] ?? <LayoutDashboard className="h-4 w-4" />}
             {item.label}
           </Link>
         );
@@ -67,7 +118,7 @@ export function AppShell({
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       {impersonating ? (
         <div className="bg-amber-500 px-4 py-2 text-center text-sm font-medium text-amber-950">
           আপনি সুপার অ্যাডমিন হিসেবে এই স্কুলে লগইন করেছেন।{" "}
@@ -101,7 +152,7 @@ export function AppShell({
         ) : null}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card/90 px-4 backdrop-blur">
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card px-4">
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setOpen(true)}>
               <Menu className="h-5 w-5" />
             </Button>
@@ -109,11 +160,7 @@ export function AppShell({
               <p className="text-sm text-muted-foreground">{roleLabel}</p>
               <p className="text-sm font-medium">{userName}</p>
             </div>
-            <button
-              onClick={toggleTheme}
-              className="rounded-lg p-2 hover:bg-muted"
-              aria-label="থিম"
-            >
+            <button onClick={toggleTheme} className="rounded-lg p-2 hover:bg-muted" aria-label="থিম">
               {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
             <Bell className="h-4 w-4 text-muted-foreground" />
