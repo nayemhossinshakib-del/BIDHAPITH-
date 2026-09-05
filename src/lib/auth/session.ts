@@ -69,15 +69,19 @@ export async function createUserSession(opts: {
   return { jwt, sessionId, expiresAt };
 }
 
-export async function setSessionCookie(jwt: string, expiresAt: Date) {
-  const store = await cookies();
-  store.set(SESSION_COOKIE, jwt, {
+export function sessionCookieOptions(expiresAt: Date) {
+  return {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL),
     path: "/",
     expires: expiresAt,
-  });
+  };
+}
+
+export async function setSessionCookie(jwt: string, expiresAt: Date) {
+  const store = await cookies();
+  store.set(SESSION_COOKIE, jwt, sessionCookieOptions(expiresAt));
 }
 
 export async function clearSessionCookie() {
@@ -92,8 +96,16 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   const payload = await verifySessionToken(token);
   if (!payload) return null;
 
-  const session = db.select().from(sessions).where(eq(sessions.id, payload.sid)).get();
-  if (!session || session.revokedAt || session.expiresAt.getTime() < Date.now()) return null;
+  let session:
+    | { id: string; revokedAt: Date | null; expiresAt: Date; impersonatedBy: string | null }
+    | undefined;
+  try {
+    session = db.select().from(sessions).where(eq(sessions.id, payload.sid)).get();
+  } catch {
+    session = undefined;
+  }
+  if (session?.revokedAt) return null;
+  if (session && epochMs(session.expiresAt) > 0 && epochMs(session.expiresAt) < Date.now()) return null;
 
   const user = db.select().from(users).where(eq(users.id, payload.sub)).get();
   if (!user || user.status !== "ACTIVE") return null;
@@ -105,9 +117,19 @@ export async function getAuthContext(): Promise<AuthContext | null> {
     role: user.role as Role,
     schoolId: user.schoolId,
     permissions: permissionsFor(user.role as Role),
-    sessionId: session.id,
-    impersonatedBy: session.impersonatedBy,
+    sessionId: session?.id ?? payload.sid,
+    impersonatedBy: session?.impersonatedBy ?? payload.impersonatedBy ?? null,
   };
+}
+
+function epochMs(value: Date | number | string | null | undefined) {
+  if (value == null) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number") return value < 1e12 ? value * 1000 : value;
+  const n = Number(value);
+  if (Number.isFinite(n) && n > 0) return n < 1e12 ? n * 1000 : n;
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 export async function requireAuth(): Promise<AuthContext> {

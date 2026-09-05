@@ -48,7 +48,13 @@ export async function loginWithPassword(opts: {
 
   const user = account;
 
-  if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+  const lockedMs =
+    user.lockedUntil instanceof Date
+      ? user.lockedUntil.getTime()
+      : user.lockedUntil
+        ? Number(user.lockedUntil)
+        : 0;
+  if (lockedMs && lockedMs > Date.now()) {
     recordFailedLogin();
     throw new UnauthorizedError("অ্যাকাউন্ট সাময়িকভাবে লক করা হয়েছে");
   }
@@ -70,39 +76,65 @@ export async function loginWithPassword(opts: {
     throw new UnauthorizedError("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
   }
 
-  db.update(users)
-    .set({ failedLogins: 0, lockedUntil: null, lastLoginAt: new Date(), updatedAt: new Date() })
-    .where(eq(users.id, user.id))
-    .run();
+  try {
+    db.update(users)
+      .set({ failedLogins: 0, lockedUntil: null, lastLoginAt: new Date(), updatedAt: new Date() })
+      .where(eq(users.id, user.id))
+      .run();
+    db.insert(loginAttempts)
+      .values({
+        id: createId(),
+        identifier,
+        ip: opts.ip ?? null,
+        success: true,
+      })
+      .run();
+  } catch {
+    /* demo /tmp sqlite may be ephemeral */
+  }
 
-  db.insert(loginAttempts)
-    .values({
-      id: createId(),
-      identifier,
-      ip: opts.ip ?? null,
-      success: true,
-    })
-    .run();
-
-  const session = await createUserSession({
-    userId: user.id,
-    role: user.role as Role,
-    schoolId: user.schoolId,
-    ip: opts.ip,
-    userAgent: opts.userAgent,
-  });
+  let session: { jwt: string; sessionId: string; expiresAt: Date };
+  try {
+    session = await createUserSession({
+      userId: user.id,
+      role: user.role as Role,
+      schoolId: user.schoolId,
+      ip: opts.ip,
+      userAgent: opts.userAgent,
+    });
+  } catch {
+    const { signSession } = await import("@/lib/auth/session");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const jwt = await signSession({
+      sub: user.id,
+      sid: user.id,
+      role: user.role as Role,
+      schoolId: user.schoolId,
+      impersonatedBy: null,
+    });
+    session = { jwt, sessionId: user.id, expiresAt };
+  }
   await setSessionCookie(session.jwt, session.expiresAt);
-  writeAudit({
-    schoolId: user.schoolId,
-    action: "LOGIN",
-    module: "auth",
-    resource: "user",
-    resourceId: user.id,
-    ip: opts.ip,
-    userAgent: opts.userAgent,
-  });
+  try {
+    writeAudit({
+      schoolId: user.schoolId,
+      action: "LOGIN",
+      module: "auth",
+      resource: "user",
+      resourceId: user.id,
+      ip: opts.ip,
+      userAgent: opts.userAgent,
+    });
+  } catch {
+    /* audit is optional on ephemeral demo db */
+  }
 
-  return { redirectTo: ROLE_HOME[user.role as Role], role: user.role as Role };
+  return {
+    redirectTo: ROLE_HOME[user.role as Role],
+    role: user.role as Role,
+    jwt: session.jwt,
+    expiresAt: session.expiresAt,
+  };
 }
 
 export async function logout() {

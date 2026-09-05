@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["better-sqlite3"],
   outputFileTracingIncludes: {
+    "/*": ["./prisma/demo.sqlite"],
+    "/admin": ["./prisma/demo.sqlite"],
+    "/admin/:path*": ["./prisma/demo.sqlite"],
+    "/api/:path*": ["./prisma/demo.sqlite"],
+    "/login": ["./prisma/demo.sqlite"],
+    "/school/:path*": ["./prisma/demo.sqlite"],
+    "/teacher/:path*": ["./prisma/demo.sqlite"],
+    "/accountant/:path*": ["./prisma/demo.sqlite"],
+    "/student/:path*": ["./prisma/demo.sqlite"],
     "*": ["./prisma/demo.sqlite"],
   },
   images: {

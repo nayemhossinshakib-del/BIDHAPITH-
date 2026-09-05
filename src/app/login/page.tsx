@@ -7,7 +7,7 @@ import { DEMO_ACCOUNTS } from "@/lib/constants";
 export const metadata = { title: "লগইন" };
 
 export default function LoginPage() {
-  const demo = process.env.DEMO_MODE === "true" || process.env.NODE_ENV !== "production";
+  const demo = process.env.DEMO_MODE !== "false";
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="hidden flex-col justify-between bg-sidebar p-10 text-white lg:flex">
@@ -28,7 +28,7 @@ export default function LoginPage() {
           <h2 className="text-2xl font-semibold">লগইন</h2>
           <p className="mt-1 text-sm text-muted-foreground">ইমেইল বা মোবাইল এবং পাসওয়ার্ড দিন</p>
           <Suspense>
-            <LoginForm />
+            <LoginForm showDemo={demo} />
           </Suspense>
           <p className="mt-4 text-sm text-muted-foreground">
             নতুন স্কুল?{" "}
