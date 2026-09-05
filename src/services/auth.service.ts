@@ -26,11 +26,11 @@ export async function loginWithPassword(opts: {
   assertRateLimit(`login:${identifier}`, 8, 15 * 60 * 1000);
   assertRateLimit(`login-ip:${opts.ip ?? "unknown"}`, 30, 15 * 60 * 1000);
 
-  const user =
-    db.select().from(users).where(eq(users.email, identifier)).get() ??
-    db.select().from(users).where(eq(users.mobile, opts.identifier.trim())).get();
+  const byEmail = db.select().from(users).where(eq(users.email, identifier)).get();
+  const byMobile = db.select().from(users).where(eq(users.mobile, opts.identifier.trim())).get();
+  const account = byEmail ?? byMobile;
 
-  const fail = (reason: string): never => {
+  const recordFailedLogin = () => {
     db.insert(loginAttempts)
       .values({
         id: createId(),
@@ -39,17 +39,23 @@ export async function loginWithPassword(opts: {
         success: false,
       })
       .run();
-    throw new UnauthorizedError(reason);
   };
 
-  if (!user) fail("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
+  if (account == null) {
+    recordFailedLogin();
+    throw new UnauthorizedError("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
+  }
+
+  const user = account;
 
   if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
-    fail("অ্যাকাউন্ট সাময়িকভাবে লক করা হয়েছে");
+    recordFailedLogin();
+    throw new UnauthorizedError("অ্যাকাউন্ট সাময়িকভাবে লক করা হয়েছে");
   }
 
   if (user.status !== "ACTIVE") {
-    fail("এই অ্যাকাউন্টটি নিষ্ক্রিয়");
+    recordFailedLogin();
+    throw new UnauthorizedError("এই অ্যাকাউন্টটি নিষ্ক্রিয়");
   }
 
   const ok = await verifyPassword(opts.password, user.passwordHash);
@@ -60,7 +66,8 @@ export async function loginWithPassword(opts: {
       .set({ failedLogins: failed, lockedUntil, updatedAt: new Date() })
       .where(eq(users.id, user.id))
       .run();
-    fail("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
+    recordFailedLogin();
+    throw new UnauthorizedError("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
   }
 
   db.update(users)
